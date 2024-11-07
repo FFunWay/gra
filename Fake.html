@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth OK, Center, and Return Sender for HM10</title>
+    <style>
+        /* 基本樣式設置 */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        /* 按鈕樣式 */
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #connectButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #connectButton:hover {
+            background-color: #45a049;
+        }
+
+        #sendButton, #centerButton, #returnButton {
+            background-color: #008CBA;
+            color: white;
+        }
+
+        #sendButton:disabled, #centerButton:disabled, #returnButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #sendButton:hover:not(:disabled), #centerButton:hover:not(:disabled), #returnButton:hover:not(:disabled) {
+            background-color: #007bb5;
+        }
+
+        /* 彈出框樣式 */
+        .alert {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none; /* 默認隱藏 */
+        }
+    </style>
+</head>
+<body>
+    <h1>藍牙傳輸 (HM10)</h1>
+    <button id="connectButton">連接藍牙</button>
+    <button id="sendButton" disabled>傳送 OK</button>
+    <button id="centerButton" disabled>傳送 Center</button>
+    <button id="returnButton" disabled>回歸</button>
+
+    <!-- 彈出框，用於顯示連接狀態和錯誤信息 -->
+    <div id="alertBox" class="alert"></div>
+
+    <script>
+        let bluetoothDevice;
+        let characteristic;
+
+        // 顯示彈出框
+        function showAlert(message) {
+            const alertBox = document.getElementById("alertBox");
+            alertBox.textContent = message;
+            alertBox.style.display = "block";
+            setTimeout(() => alertBox.style.display = "none", 3000); // 3秒後自動隱藏
+        }
+
+        // 連接 HM10 藍牙設備
+        async function connectBluetooth() {
+            try {
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }]
+                });
+
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+
+                showAlert("藍牙已連接");
+                document.getElementById("sendButton").disabled = false;
+                document.getElementById("centerButton").disabled = false;
+                document.getElementById("returnButton").disabled = false;
+            } catch (error) {
+                console.error("連接藍牙時出錯: ", error);
+                showAlert("連接藍牙時出錯");
+            }
+        }
+
+        // 傳送 OK 訊息
+        async function sendOk() {
+            if (!characteristic) {
+                showAlert("尚未連接藍牙，請先連接！");
+                return;
+            }
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode("ok");
+
+            try {
+                await characteristic.writeValue(data);
+                showAlert("OK 已傳送");
+            } catch (error) {
+                console.error("傳送時出錯: ", error);
+                showAlert("傳送時出錯");
+            }
+        }
+
+        // 傳送 Center 訊息
+        async function sendCenter() {
+            if (!characteristic) {
+                showAlert("尚未連接藍牙，請先連接！");
+                return;
+            }
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode("center");
+
+            try {
+                await characteristic.writeValue(data);
+                showAlert("Center 已傳送");
+            } catch (error) {
+                console.error("傳送時出錯: ", error);
+                showAlert("傳送時出錯");
+            }
+        }
+
+        // 傳送 45 訊息
+        async function sendReturn() {
+            if (!characteristic) {
+                showAlert("尚未連接藍牙，請先連接！");
+                return;
+            }
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode("45");
+
+            try {
+                await characteristic.writeValue(data);
+                showAlert("45 已傳送");
+            } catch (error) {
+                console.error("傳送時出錯: ", error);
+                showAlert("傳送時出錯");
+            }
+        }
+
+        // 設置按鈕事件監聽
+        document.getElementById("connectButton").addEventListener("click", connectBluetooth);
+        document.getElementById("sendButton").addEventListener("click", sendOk);
+        document.getElementById("centerButton").addEventListener("click", sendCenter);
+        document.getElementById("returnButton").addEventListener("click", sendReturn);
+    </script>
+</body>
+</html>
